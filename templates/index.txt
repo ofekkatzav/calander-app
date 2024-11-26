@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>האירועים שלך מוכנים!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background: #fff;
+            max-width: 600px;
+            width: 90%;
+            border-radius: 15px;
+            padding: 20px 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        .logo {
+            max-width: 100px;
+            margin-bottom: 20px;
+            border-radius: 50%; /* עיצוב הלוגו כעיגול */
+            border: 2px solid #ccc; /* גבול מסביב לעיגול (אופציונלי) */
+        }
+        h1 {
+            color: #4a90e2;
+            margin-bottom: 20px;
+        }
+        h3 {
+            color: #555;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        li {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: right;
+        }
+        a {
+            display: inline-block;
+            margin: 10px 10px;
+            padding: 12px 20px;
+            font-size: 16px;
+            text-decoration: none;
+            color: #fff;
+            border-radius: 25px;
+            transition: 0.3s ease;
+        }
+        a.download {
+            background-color: #4caf50;
+        }
+        a.download:hover {
+            background-color: #43a047;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/static/logo.png" alt="Logo" class="logo">
+        <h1>האירועים שלך מוכנים!</h1>
+        <h3>תצוגה מקדימה:</h3>
+        <ul>
+            {% for event in events %}
+            {% if 'start_local' in event and 'end_local' in event %}
+            <li>
+                <strong>{{ event['description'] }}</strong><br>
+                {{ event['start_local'].strftime('%Y-%m-%d %H:%M') }} - 
+                {{ event['end_local'].strftime('%Y-%m-%d %H:%M') }}
+            </li>
+            {% else %}
+            <li>
+                <strong>{{ event['description'] }}</strong><br>
+                <span>זמן לא זמין</span>
+            </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+        <p>בחר אחת מהאפשרויות הבאות:</p>
+        <a href="{{ url_for('download_ics', file_name=file_name) }}" class="download">הורד קובץ ICS</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>יומן כוננויות</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #f0f0f0; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1rem;
+            background-image: url('/static/logo.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            border: 3px solid #000000;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #e06b3e; 
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+            text-align: right;
+        }
+        textarea {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            text-align: right;
+        }
+        button {
+            width: 100%;
+            background-color: #e06b3e;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #d65e33;
+        }
+        .error {
+            color: red;
+            background: #ffebe6;
+            border: 1px solid #ffccc7;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 6px;
+            text-align: right;
+            display: none; /* Hidden by default */
+        }
+        footer {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #555;
+            text-align: left;
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            const textarea = document.getElementById('schedule');
+            if (textarea) {
+                textarea.value = ""; // Clear the textarea on page load
+            }
+
+            const errorContainer = document.querySelector('.error');
+            const errorList = errorContainer ? errorContainer.querySelector('ul') : null;
+            if (errorContainer && errorList && errorList.children.length > 0) {
+                errorContainer.style.display = "block";
+            } else {
+                errorContainer.style.display = "none";
+            }
+        };
+
+        document.addEventListener('submit', function(event) {
+            setTimeout(function() {
+                const textarea = document.getElementById('schedule');
+                if (textarea) {
+                    textarea.value = "";
+                }
+            }, 100); // Clear the textarea after form submission
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorContainer = document.querySelector('.error');
+            const errorList = errorContainer ? errorContainer.querySelector('ul') : null;
+
+            if (!errorList || errorList.children.length === 0) {
+                errorContainer.style.display = "none";
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"></div>
+        <h1>יומן כוננויות</h1>
+        <form method="POST" action="/generate_ics">
+            <label for="schedule">לוח זמנים</label>
+            <textarea id="schedule" name="schedule" rows="6" required placeholder="הזן כאן את לוח הזמנים שלך בפורמט הנכון"></textarea>
+            <button type="submit">הכנס ללו"ז</button>
+        </form>
+
+        <!-- Updated error display to dynamically show or hide based on content -->
+        <div class="error" style="display: none;">
+            <h3>שגיאות עיבוד:</h3>
+            <ul>
+                {% if errors and errors|length > 0 %}
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+
+        <footer>
+            <p>Developed by Ofek Katzav</p>
+        </footer>
+    </div>
+</body>
+</html>
