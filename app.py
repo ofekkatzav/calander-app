@@ -118,7 +118,7 @@ def index():
     return render_template("index.html", errors=None)
 
 
-@app.route("/generate_ics", methods=["POST"])
+@app.route("/generate_ics", methods=["POST"] action="/generate_ics">)
 def generate_ics():
     schedule_text = request.form.get("schedule", "").strip()  # בדיקה אם השדה ריק
 
