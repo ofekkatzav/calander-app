@@ -1,4 +1,5 @@
-from flask import Flask, request, render_template, Response, redirect
+from flask import Flask, request, render_template, Response, redirect, url_for
+
 from ics import Calendar, Event
 from datetime import datetime, timedelta
 import pytz
@@ -93,6 +94,7 @@ def index():
         if not events:
             return render_template("index.html", errors=["לא נמצאו אירועים תקפים בטקסט שהוזן."])
 
+        # יצירת לוח שנה
         calendar = Calendar()
         for event in events:
             e = Event()
@@ -101,10 +103,12 @@ def index():
             e.end = event["end"]
             calendar.events.add(e)
 
+        # יצירת קובץ ICS בתור StringIO
         ics_file = io.StringIO()
         ics_file.writelines(calendar)
         ics_file.seek(0)
 
+        # החזרת קובץ ICS בתור תגובת HTTP עם כותרות מתאימות
         return Response(
             ics_file.getvalue(),
             mimetype="text/calendar",
@@ -116,57 +120,6 @@ def index():
 
     # When GET method is used or after refreshing
     return render_template("index.html", errors=None)
-
-
-@app.route("/generate_ics", methods=["POST"])
-def generate_ics():
-    schedule_text = request.form.get("schedule", "").strip()  # בדיקה אם השדה ריק
-
-    if not schedule_text:  # אם שדה הטקסט ריק
-        return redirect("/")  # החזרה לדף הבית
-
-    # עיבוד הטקסט
-    events, errors = parse_schedule(schedule_text)
-
-    if errors:  # אם יש שגיאות
-        return render_template("invalid_format.html", errors=errors)
-
-    if not events:  # אם אין אירועים תקפים
-        return render_template("invalid_format.html", errors=["לא נמצאו אירועים תקפים בטקסט שהוזן."])
-
-    # יצירת קובץ ה-ICS
-    calendar = Calendar()
-    for event in events:
-        e = Event()
-        e.name = event["description"]
-        e.begin = event["start"]
-        e.end = event["end"]
-        calendar.events.add(e)
-
-    ics_file = io.StringIO()
-    ics_file.writelines(calendar)
-    ics_file.seek(0)
-
-    return Response(
-        ics_file.getvalue(),
-        mimetype="text/calendar",
-        headers={
-            "Content-Disposition": "attachment; filename=schedule.ics",
-            "Content-Type": "text/calendar; charset=utf-8",
-        }
-    )
-
-    
-    return Response(
-        ics_file.getvalue(),
-        mimetype="text/calendar",
-        headers={
-            "Content-Disposition": "attachment; filename=schedule.ics",
-            "Content-Type": "text/calendar; charset=utf-8",
-        }
-    )
-    
-    
 
 
 if __name__ == "__main__":
