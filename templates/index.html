@@ -50,13 +50,12 @@
         }
         textarea {
             width: 100%;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem; /* התאמה כדי לפנות מקום למונה התווים */
             padding: 0.8rem;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 1rem;
             text-align: right;
-            margin-left: -13px;
         }
         button {
             width: 100%;
@@ -81,7 +80,7 @@
             margin-top: 1rem;
             border-radius: 6px;
             text-align: right;
-            display: none; /* Hidden by default */
+            display: none; /* מוסתר כברירת מחדל */
         }
         footer {
             margin-top: 1.5rem;
@@ -89,12 +88,18 @@
             color: #555;
             text-align: left;
         }
+        #char-count {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 1rem;
+        }
     </style>
     <script>
         window.onload = function() {
             const textarea = document.getElementById('schedule');
             if (textarea) {
-                textarea.value = ""; // Clear the textarea on page load
+                textarea.value = ""; // ניקוי ה-textarea בעת טעינת הדף
             }
 
             const errorContainer = document.querySelector('.error');
@@ -104,6 +109,16 @@
             } else {
                 errorContainer.style.display = "none";
             }
+
+            // אתחול מונה התווים
+            const maxLength = textarea.getAttribute('maxlength');
+            const charCount = document.getElementById('char-count');
+            const updateCharCount = () => {
+                const remaining = maxLength - textarea.value.length;
+                charCount.textContent = `תווים נותרים: ${remaining}`;
+            };
+            textarea.addEventListener('input', updateCharCount);
+            updateCharCount();
         };
 
         document.addEventListener('submit', function(event) {
@@ -112,7 +127,7 @@
                 if (textarea) {
                     textarea.value = "";
                 }
-            }, 100); // Clear the textarea after form submission
+            }, 100); // ניקוי ה-textarea לאחר שליחת הטופס
         });
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -131,11 +146,12 @@
         <h1>יומן כוננויות</h1>
         <form method="POST" action="/">
             <label for="schedule">לוח זמנים</label>
-            <textarea id="schedule" name="schedule" rows="6" required placeholder="הזן כאן את לוח הזמנים שלך בפורמט הנכון"></textarea>
+            <textarea id="schedule" name="schedule" rows="6" required maxlength="5000" placeholder="הזן כאן את לוח הזמנים שלך בפורמט הנכון"></textarea>
+            <div id="char-count">תווים נותרים: 5000</div>
             <button type="submit">הכנס ללו"ז</button>
         </form>
 
-        <!-- Updated error display to dynamically show or hide based on content -->
+        <!-- תצוגת השגיאות מעודכנת להצגה דינמית -->
         <div class="error" style="display: none;">
             <h3>שגיאות עיבוד:</h3>
             <ul>

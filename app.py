@@ -96,6 +96,12 @@ def index():
         schedule_text = request.form.get("schedule", "").strip()
         events, errors = parse_schedule(schedule_text)
 
+        if len(schedule_text) > 5000:
+            errors = ["קלט ארוך מדי. אנא צמצם את לוח הזמנים שהוזן."]
+            return render_template("index.html", errors=errors)
+           
+            events, errors = parse_schedule(schedule_text)
+
         if errors:
             return render_template("index.html", errors=errors)
 
