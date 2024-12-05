@@ -31,8 +31,16 @@ def parse_schedule(schedule_text):
             try:
                 date_str = date_match.group(2)
                 if len(date_str.split(".")) == 2:  # הוספת שנה נוכחית אם חסרה
-                    date_str += f".{datetime.now().year}"
-                current_date = datetime.strptime(date_str, "%d.%m.%Y")
+                    current_year = datetime.now().year
+                    date_str += f".{current_year}"
+                    parsed_date = datetime.strptime(date_str, "%d.%m.%Y")
+                    # בדיקה אם התאריך כבר עבר
+                    if parsed_date.date() < datetime.now().date():
+                        # אם כן, מוסיפים שנה אחת
+                        parsed_date = parsed_date.replace(year=current_year + 1)
+                    current_date = parsed_date
+                else:
+                    current_date = datetime.strptime(date_str, "%d.%m.%Y")
                 if current_date.tzinfo is None:
                     current_date = local_tz.localize(current_date)
                 continue
