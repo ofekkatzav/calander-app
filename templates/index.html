@@ -50,7 +50,7 @@
         }
         textarea {
             width: 100%;
-            margin-bottom: 0.5rem; /* התאמה כדי לפנות מקום למונה התווים */
+            margin-bottom: 0.5rem;
             padding: 0.8rem;
             border: 1px solid #ccc;
             border-radius: 6px;
@@ -81,7 +81,9 @@
             margin-top: 1rem;
             border-radius: 6px;
             text-align: right;
-            display: none; /* מוסתר כברירת מחדל */
+            direction: rtl;
+            list-style-position: outside; /* הנקודות יהיו מחוץ לטקסט */
+            list-style-type: disc;        /* סוג הנקודה - ניתן לשנות ל-circle, square וכו' */
         }
         footer {
             margin-top: 1.5rem;
@@ -103,14 +105,6 @@
                 textarea.value = ""; // ניקוי ה-textarea בעת טעינת הדף
             }
 
-            const errorContainer = document.querySelector('.error');
-            const errorList = errorContainer ? errorContainer.querySelector('ul') : null;
-            if (errorContainer && errorList && errorList.children.length > 0) {
-                errorContainer.style.display = "block";
-            } else {
-                errorContainer.style.display = "none";
-            }
-
             // אתחול מונה התווים
             const maxLength = textarea.getAttribute('maxlength');
             const charCount = document.getElementById('char-count');
@@ -130,19 +124,11 @@
                 }
             }, 100); // ניקוי ה-textarea לאחר שליחת הטופס
         });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const errorContainer = document.querySelector('.error');
-            const errorList = errorContainer ? errorContainer.querySelector('ul') : null;
-
-            if (!errorList || errorList.children.length === 0) {
-                errorContainer.style.display = "none";
-            }
-        });
     </script>
 </head>
 <body>
     <div class="container">
+        {% set errors = errors or [] %}
         <div class="logo"></div>
         <h1>יומן כוננויות</h1>
         <form method="POST" action="/">
@@ -152,17 +138,22 @@
             <button type="submit">הכנס ללו"ז</button>
         </form>
 
-        <!-- תצוגת השגיאות מעודכנת להצגה דינמית -->
-        <div class="error" style="display: none;">
+        <!-- הצגת השגיאות -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="error">
             <h3>שגיאות עיבוד:</h3>
             <ul>
-                {% if errors and errors|length > 0 %}
-                {% for error in errors %}
-                <li>{{ error }}</li>
+                {% for message in messages %}
+                <li>{{ message }}</li>
                 {% endfor %}
-                {% endif %}
             </ul>
         </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- הדפסה לצורך דיבוג -->
+        <p style="display: none;">Errors: {{ errors }}</p>
 
         <footer>
             <p>Developed by Ofek Katzav</p>

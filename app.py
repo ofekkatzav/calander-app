@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, Response, redirect, url_for
+from flask import Flask, request, render_template, Response, redirect, url_for, flash, session
 
 from ics import Calendar, Event
 from datetime import datetime, timedelta
@@ -85,30 +85,36 @@ def parse_schedule(schedule_text):
     
     # אם לא נמצאו אירועים והטקסט אינו תואם פורמט
     if not events and not errors :
-        errors.append("לא נמצאו אירועים תקפים בטקסט שהוזן. ודא שהפורמט נכון.")
+        errors.append("לא נמצאו אירועים תקפים בטקסט שהוזן, ודא שהפורמט נכון.")
     
 
     return events, errors
 
-@app.route("/", methods=["GET", "POST"])
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # החלף במפתח סודי אמיתי
+
+@app.route("/", methods=["GET", "POST"], strict_slashes=False)
 def index():
     if request.method == "POST":
         schedule_text = request.form.get("schedule", "").strip()
-        events, errors = parse_schedule(schedule_text)
-
+    
+        # הגבלת אורך הקלט ל-5000 תווים
         if len(schedule_text) > 5000:
-            errors = ["קלט ארוך מדי. אנא צמצם את לוח הזמנים שהוזן."]
-            return render_template("index.html", errors=errors)
-           
-            events, errors = parse_schedule(schedule_text)
-
+            flash("קלט ארוך מדי. אנא צמצם את לוח הזמנים שהוזן.")
+            return redirect(url_for('index'))
+    
+        events, errors = parse_schedule(schedule_text)
+    
         if errors:
-            return render_template("index.html", errors=errors)
-
+            for error in errors:
+                flash(error)
+            return redirect(url_for('index'))
+    
         if not events:
-            return render_template("index.html", errors=["לא נמצאו אירועים תקפים בטקסט שהוזן."])
-
-        # יצירת לוח שנה
+            flash("לא נמצאו אירועים תקפים בטקסט שהוזן.")
+            return redirect(url_for('index'))
+    
+        # יצירת לוח שנה והחזרת התגובה כרגיל
         calendar = Calendar()
         for event in events:
             e = Event()
@@ -116,13 +122,11 @@ def index():
             e.begin = event["start"]
             e.end = event["end"]
             calendar.events.add(e)
-
-        # יצירת קובץ ICS בתור StringIO
+    
         ics_file = io.StringIO()
         ics_file.writelines(calendar)
         ics_file.seek(0)
-
-        # החזרת קובץ ICS בתור תגובת HTTP עם כותרות מתאימות
+    
         return Response(
             ics_file.getvalue(),
             mimetype="text/calendar",
@@ -131,9 +135,9 @@ def index():
                 "Content-Type": "text/calendar; charset=utf-8",
             }
         )
+    else:
+        return render_template("index.html")
 
-    # When GET method is used or after refreshing
-    return render_template("index.html", errors=None)
 
 
 if __name__ == "__main__":
