@@ -6,7 +6,7 @@ import re
 import io
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # החלף במפתח סודי אמיתי
+app.secret_key = 'Yyt7M@RW^El*o'  # החלף במפתח סודי אמיתי
 
 def parse_schedule(schedule_text):
     events = []
@@ -41,11 +41,17 @@ def parse_schedule(schedule_text):
         if date_match:
             current_day_name = date_match.group(1).strip()
             date_str = date_match.group(2)
+            
+            # החלפת "/" ב־"." במקרה הצורך:
+            date_str = date_str.replace("/", ".")
+            
             try:
+                # אם לא צויין שנה – מוסיפים את השנה הנוכחית
                 if len(date_str.split(".")) == 2:
                     current_year = datetime.now().year
                     date_str += f".{current_year}"
                 parsed_date = datetime.strptime(date_str, "%d.%m.%Y")
+                # אם התאריך כבר עבר, מניחים שהתאריך בשנה הבאה
                 if parsed_date.date() < datetime.now().date():
                     parsed_date = parsed_date.replace(year=parsed_date.year + 1)
                 current_date = local_tz.localize(parsed_date)
@@ -219,5 +225,5 @@ def index():
 
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=True)
