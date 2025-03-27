@@ -139,16 +139,43 @@
         </form>
 
         <!-- הצגת השגיאות -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
+        {% with error_messages = get_flashed_messages(category_filter=["error"]) %}
+        {% if error_messages %}
         <div class="error">
             <h3>שגיאות עיבוד:</h3>
             <ul>
-                {% for message in messages %}
+                {% for message in error_messages %}
                 <li>{{ message }}</li>
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- הצגת מידע דיבאג עם צבע אחר להודעות הצלחה -->
+        {% with success_messages = get_flashed_messages(category_filter=["success"]) %}
+        {% if success_messages %}
+        <div class="success-info">
+            <h3>אירועים שזוהו:</h3>
+            <ul>
+                {% for message in success_messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <style>
+            .success-info {
+                background: #e8f5e9;
+                border: 1px solid #c8e6c9;
+                padding: 1rem;
+                margin-top: 1rem;
+                border-radius: 6px;
+                text-align: right;
+                direction: rtl;
+                list-style-position: outside;
+                list-style-type: disc;
+            }
+        </style>
         {% endif %}
         {% endwith %}
 

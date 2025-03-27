@@ -127,43 +127,61 @@ def parse_schedule(schedule_text):
                     start_time_raw = time_match_res.group(1).strip()  # לדוגמה "22", "22:30"
                     end_time_raw   = time_match_res.group(2).strip()  # לדוגמה "2", "02:00"
 
+                    # המרה לפורמט עם אפסים מובילים
+                    sh, sm = _parse_hour_minute(start_time_raw)
+                    eh, em = _parse_hour_minute(end_time_raw)
+                    
+                    start_time_formatted = f"{sh:02d}:{sm:02d}"
+                    end_time_formatted = f"{eh:02d}:{em:02d}"
+
+                    # מסירים את הדקות אם הן 00
+                    start_time_display = start_time_formatted[:2] if start_time_formatted.endswith(":00") else start_time_formatted
+                    end_time_display = end_time_formatted[:2] if end_time_formatted.endswith(":00") else end_time_formatted
+                    
                     # יוצרים תיאור מלא מהטקסט השלם
                     description = next_line
                     
-                    # ננסה לחלץ את סוג המשמרת (למשל "קשה")
-                    shift_type = ""
-                    shift_types = ["קשה", "קל", "בינוני", "מאומץ", "נינוח", "רגיל"]
+                    # ננסה לחלץ את התפקיד במשמרת (לא סוג המשמרת)
+                    roles = ["קשה", "קל", "בינוני", "מאומץ", "נינוח", "רגיל", "חוץ", "פנים"]
                     special_events = ["שיחת מפעילים", "קה\"ד", "הכשרה", "תדריך", "ישיבה"]
                     
                     # בדיקה לאירועים מיוחדים
                     event_title = ""
                     for special in special_events:
                         if special.lower() in next_line.lower():
-                            event_title = f"{special} {start_time_raw}-{end_time_raw}"
+                            event_title = f"{special} ({start_time_display}-{end_time_display})"
                             break
                     
-                    # אם לא מצאנו אירוע מיוחד, נחפש סוג משמרת
+                    # אם לא מצאנו אירוע מיוחד, נחפש תפקיד
                     if not event_title:
-                        for shift in shift_types:
-                            if shift in next_line:
-                                shift_type = shift
+                        role = ""
+                        for r in roles:
+                            if r in next_line:
+                                role = r
                                 break
                         
-                        # נוסיף את סוג המשמרת לתיאור אם יש צורך
-                        if shift_type:
-                            event_title = f"{shift_type} {start_time_raw}-{end_time_raw}"
+                        # נוסיף את התפקיד לתיאור
+                        if role:
+                            event_title = f"{role} ({start_time_display}-{end_time_display})"
                         else:
-                            event_title = f"משמרת {start_time_raw}-{end_time_raw}"
+                            event_title = f"משמרת ({start_time_display}-{end_time_display})"
 
-                    # ממירים את השעות למספרים
-                    sh, sm = _parse_hour_minute(start_time_raw)
-                    eh, em = _parse_hour_minute(end_time_raw)
-
+                    # ממירים את השעות למספרים שכבר חילצנו למעלה
                     start_dt = datetime.combine(current_date.date(), datetime.min.time()).replace(hour=sh, minute=sm)
                     end_dt   = datetime.combine(current_date.date(), datetime.min.time()).replace(hour=eh, minute=em)
 
+                    # טיפול מיוחד בשעות הבוקר המוקדמות כשמופיעות בין 0-10 עם שעות סיום גדולות משעות התחלה
+                    if sh >= 0 and sh < 10 and eh >= 0 and eh < 10 and eh > sh:
+                        # אם זו משמרת "חוץ" ביום שישי, יש סיכוי גבוה שזה מתייחס ליום שבת
+                        if "חוץ" in next_line and current_day_name == "שישי":
+                            start_dt += timedelta(days=1)
+                            end_dt += timedelta(days=1)
+                    # אם שעת ההתחלה היא אחרי 18:00 ושעת הסיום בין 2:00 ל-10:00, 
+                    # נניח שזה נמשך עד היום למחרת
+                    elif (sh >= 18 and eh > 0 and eh < 10):
+                        end_dt += timedelta(days=1)
                     # אם שעת הסיום <= שעת ההתחלה, נניח שזה נמשך עד היום למחרת
-                    if end_dt <= start_dt:
+                    elif end_dt <= start_dt:
                         end_dt += timedelta(days=1)
 
                     events.append({
@@ -221,22 +239,37 @@ def parse_schedule(schedule_text):
 @app.route("/", methods=["GET", "POST"], strict_slashes=False)
 def index():
     if request.method == "POST":
+        # מוחק את כל ההודעות הקודמות
+        session.pop('_flashes', None)
+        
         schedule_text = request.form.get("schedule", "").strip()
 
         if len(schedule_text) > 5000:
-            flash("קלט ארוך מדי. אנא צמצם את לוח הזמנים שהוזן.")
+            flash("קלט ארוך מדי. אנא צמצם את לוח הזמנים שהוזן.", "error")
             return redirect(url_for('index'))
 
         events, errors = parse_schedule(schedule_text)
 
         if errors:
             for error in errors:
-                flash(error)
+                flash(error, "error")
             return redirect(url_for('index'))
 
         if not events:
-            flash("לא נמצאו אירועים תקפים בטקסט שהוזן.")
+            flash("לא נמצאו אירועים תקפים בטקסט שהוזן.", "error")
             return redirect(url_for('index'))
+
+        # הדפסת האירועים לדיבאג - רק אם הכל תקין
+        debug_info = []
+        for event in events:
+            start_time = event["start"].astimezone(pytz.timezone("Asia/Jerusalem")).strftime("%d/%m/%Y %H:%M")
+            end_time = event["end"].astimezone(pytz.timezone("Asia/Jerusalem")).strftime("%d/%m/%Y %H:%M")
+            title = event.get("title", event["description"])
+            debug_info.append(f"{title}: {start_time} - {end_time}")
+
+        # שומרים בפלאש במקום ב-session
+        for info in debug_info:
+            flash(info, "success")  # שימוש בקטגוריה 'success' כדי להבדיל משגיאות
 
         calendar = Calendar()
         for event in events:
@@ -260,6 +293,9 @@ def index():
             }
         )
     else:
+        # אין צורך בטיפול ב-session
+        # מנקה הודעות ישנות בעת טעינת הדף
+        session.pop('_flashes', None)
         return render_template("index.html")
 
 if __name__ == "__main__":
