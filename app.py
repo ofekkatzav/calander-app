@@ -170,18 +170,20 @@ def parse_schedule(schedule_text):
                     start_dt = datetime.combine(current_date.date(), datetime.min.time()).replace(hour=sh, minute=sm)
                     end_dt   = datetime.combine(current_date.date(), datetime.min.time()).replace(hour=eh, minute=em)
 
-                    # טיפול מיוחד בשעות הבוקר המוקדמות כשמופיעות בין 0-10 עם שעות סיום גדולות משעות התחלה
-                    if sh >= 0 and sh < 10 and eh >= 0 and eh < 10 and eh > sh:
-                        # אם זו משמרת "חוץ" ביום שישי, יש סיכוי גבוה שזה מתייחס ליום שבת
-                        if "חוץ" in next_line and current_day_name == "שישי":
-                            start_dt += timedelta(days=1)
-                            end_dt += timedelta(days=1)
-                    # אם שעת ההתחלה היא אחרי 18:00 ושעת הסיום בין 2:00 ל-10:00, 
-                    # נניח שזה נמשך עד היום למחרת
-                    elif (sh >= 18 and eh > 0 and eh < 10):
+                    # לוגיקת "יום עבודה" בטייסות: 06:00 עד 06:00 למחרת
+                    # כל שעה 00:00-05:59 שייכת ליום העבודה הקודם (תאריך קלנדרי הבא)
+                    
+                    if sh >= 0 and sh < 6:
+                        # מקרה 1: שעת התחלה בין חצות ל-06:00 בבוקר
+                        # דוגמה: "שלישי 2-6" → רביעי 02:00-06:00
+                        start_dt += timedelta(days=1)
                         end_dt += timedelta(days=1)
-                    # אם שעת הסיום <= שעת ההתחלה, נניח שזה נמשך עד היום למחרת
+                    elif eh >= 0 and eh < 6:
+                        # מקרה 2: שעת התחלה מ-06:00 ואילך, אבל סיום לפני 06:00
+                        # דוגמה: "שלישי 22-02" → שלישי 22:00 ועד רביעי 02:00
+                        end_dt += timedelta(days=1)
                     elif end_dt <= start_dt:
+                        # מקרה 3: מקרי קצה (למשל 14-12 למחרת)
                         end_dt += timedelta(days=1)
 
                     events.append({
